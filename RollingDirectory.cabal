@@ -1,0 +1,42 @@
+name:           RollingDirectory
+version:        0.1
+cabal-version:  >= 1.2
+build-type:     Simple
+stability:      experimental
+author:         Falco Hirschenberger <hirsch@bigfoot.de>
+maintainer:     Falco Hirschenberger <hirsch@bigfoot.de>
+synopsis:       Limits the size of a directory's contents
+description:    This is a daemon which monitors a directory and limits it's content's size by deleting old entries
+license:        GPL-3
+copyright:      Falco Hirschenberger <hirsch@bigfoot.de>
+
+executable RollingDirectory
+  hs-source-dirs:  src
+  main-is:         Main.hs
+  build-depends:   
+                   base >= 4,
+                   hinotify,
+                   hdaemonize,
+                   haskell98,
+                   unix,
+                   filepath,
+                   directory,
+                   monad-parallel
+  ghc-options:     -Wall -rtsopts -threaded -O
+  other-modules:   Watcher
+
+test-suite MainTest
+  main-is:         TestMain.hs
+  type:            exitcode-stdio-1.0
+  x-uses-tf:       true
+  build-depends:   
+                   base >= 4,
+                   HUnit >= 1.2 && < 2,
+                   QuickCheck >= 2.4,
+                   test-framework >= 0.4.1,
+                   test-framework-quickcheck2,
+                   test-framework-hunit
+  hs-source-dirs:  src
+  ghc-options:     -Wall -rtsopts
+  other-modules:   MainTest
+

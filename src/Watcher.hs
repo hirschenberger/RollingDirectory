@@ -20,7 +20,7 @@ start p s _ = do
         
 watch:: FilePath -> Int -> IN.INotify -> IO()
 watch p s n = do
-    _ <- IN.addWatch n [IN.Create,IN.Modify] p (handler p s)
+    _ <- IN.addWatch n [IN.Create] p (handler p s)
     forever $ threadDelay 10000 
         
 handler:: FilePath -> Int -> IN.Event -> IO ()

@@ -10,6 +10,7 @@ Usage
 -----
 
 ::
+
   $> RollingDirectory -h
     -h                     --help                       Print this helping text
     -D start|stop|restart  --daemon=start|stop|restart  Start the program in daemon mode

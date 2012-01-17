@@ -5,6 +5,7 @@ import System.IO
 import System.Environment
 import System.Console.GetOpt
 import System.Posix.Daemonize
+import System.Posix.Syslog
 import qualified Watcher as W
 
 data Options = Options {optDaemonize :: Maybe String,
@@ -43,7 +44,7 @@ printHelp = do
         hPutStrLn stderr (usageInfo prog options)
 
 main::IO()
-main = do
+main = useSyslog "RollingDirectory" $ do
     args <- getArgs
         
     -- Parse options, getting a list of option actions

@@ -13,13 +13,13 @@ copyright:      Falco Hirschenberger <hirsch@bigfoot.de>
 executable RollingDirectory
   hs-source-dirs:  src
   main-is:         Main.hs
-  build-depends:   
-                   base >= 4,
+  build-depends:   base >= 4,
                    hinotify,
                    unix,
                    filepath,
                    directory,
-                   monad-parallel
+                   monad-parallel,
+                   hsyslog
   if impl(ghc >= 7.2)
     build-depends: hdaemonize-buildfix
   else

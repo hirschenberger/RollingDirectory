@@ -1,7 +1,7 @@
 module Main where
 
+import System.Exit
 import System.IO
-import System
 import System.Environment
 import System.Console.GetOpt
 import System.Posix.Daemonize

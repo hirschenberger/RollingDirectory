@@ -28,7 +28,7 @@ handler p s evt = do
     putStrLn $ "Size: " ++ show (size sf)
     clean sf
     where
-        size = foldl (\acc (s,_,_) -> s+acc) 0
+        size = foldl (\acc (sz,_,_) -> sz+acc) 0
         clean l 
           | size l < (s*1024*1024) = return ()
           | otherwise  = do let (_,_,f) = head l

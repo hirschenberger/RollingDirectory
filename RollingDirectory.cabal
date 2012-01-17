@@ -1,6 +1,6 @@
 name:           RollingDirectory
 version:        0.1
-cabal-version:  >= 1.2
+cabal-version:  >= 1.8
 build-type:     Simple
 stability:      experimental
 author:         Falco Hirschenberger <hirsch@bigfoot.de>
@@ -16,13 +16,16 @@ executable RollingDirectory
   build-depends:   
                    base >= 4,
                    hinotify,
-                   hdaemonize,
-                   haskell98,
                    unix,
                    filepath,
                    directory,
                    monad-parallel
-  ghc-options:     -Wall -rtsopts -threaded -O
+  if impl(ghc >= 7.2)
+    build-depends: hdaemonize-buildfix
+  else
+    build-depends: hdaemonize
+
+  ghc-options:     -Wall -rtsopts -threaded 
   other-modules:   Watcher
 
 test-suite MainTest

@@ -16,7 +16,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module Watcher (start) where
+module Watcher where
 
 import Data.List
 import Control.Monad

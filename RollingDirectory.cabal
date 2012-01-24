@@ -35,17 +35,19 @@ executable RollingDirectory
   other-modules:   Watcher
 
 test-suite MainTest
-  main-is:         TestMain.hs
+  main-is:         MainTest.hs
   type:            exitcode-stdio-1.0
-  x-uses-tf:       true
-  build-depends:   
-                   base >= 4,
+  build-depends:   base >= 4,
                    HUnit >= 1.2 && < 2,
-                   QuickCheck >= 2.4,
                    test-framework >= 0.4.1,
-                   test-framework-quickcheck2,
-                   test-framework-hunit
+                   test-framework-hunit,
+                   hinotify,
+                   unix,
+                   filepath,
+                   directory,
+                   monad-parallel,
+                   hsyslog
+
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
-  other-modules:   MainTest
 

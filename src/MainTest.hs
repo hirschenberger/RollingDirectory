@@ -16,9 +16,49 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-module MainTest where
+import qualified Test.Framework as TF
+import Test.Framework.Providers.HUnit
 
 import Test.HUnit
 
-testMain :: IO Counts
-testMain = runTestTT $ TestList []
+import Data.List (sort, sortBy)
+import Control.Monad (liftM, replicateM)
+import Control.Exception (bracket)
+import System.Directory (getTemporaryDirectory, createDirectory, removeDirectoryRecursive)
+import System.FilePath.Posix ((</>))
+import System.IO (openBinaryTempFile, hPutBuf, hClose)
+import Foreign.Marshal.Alloc (mallocBytes, free)
+
+import Watcher
+
+main:: IO()
+main = TF.defaultMain tests
+
+tests:: [TF.Test]
+tests = [testCase "T1" (bracket (do files <- createTestFiles 100 100000
+                                    wfiles <- (collectDir =<< testDir)
+                                    let sw = sortBy (\(_,_,a) (_,_,b) -> compare a b) wfiles
+                                    return (sort files, sw))
+                                 (\(_, _) -> cleanup) -- replace with 'return ()' for debugging purposes
+                                 (\(f, w) -> assertBool "Directory scanning" $ all (\(a, (_,_,b)) -> a == b) (zip f w)))
+        ]
+
+createTestFiles:: Int -> Int -> IO [FilePath]
+createTestFiles num size = do
+    cleanup
+    dir <- testDir
+    payload <- mallocBytes size
+    createDirectory dir
+    names <- replicateM num (create dir payload)
+    free payload
+    return names
+    where
+      create d p = bracket (openBinaryTempFile d "testfile_.bin")
+                           (\(_, hd) -> hClose hd)
+                           (\(f, hd) -> hPutBuf hd p size >> return f)
+                                           
+testDir:: IO FilePath
+testDir = liftM (</> "RD_test") getTemporaryDirectory
+
+cleanup:: IO()
+cleanup = catch (removeDirectoryRecursive =<< testDir) (\_ -> return())

@@ -23,7 +23,7 @@ import Test.HUnit
 
 import Data.List (sort, sortBy)
 import Control.Monad (liftM, replicateM)
-import Control.Exception (bracket)
+import qualified Control.Exception as CE
 import System.Directory (getTemporaryDirectory, createDirectory, removeDirectoryRecursive)
 import System.FilePath.Posix ((</>))
 import System.IO (openBinaryTempFile, hPutBuf, hClose)
@@ -35,12 +35,12 @@ main:: IO()
 main = TF.defaultMain tests
 
 tests:: [TF.Test]
-tests = [testCase "T1" (bracket (do files <- createTestFiles 100 100000
-                                    wfiles <- (collectDir =<< testDir)
-                                    let sw = sortBy (\(_,_,a) (_,_,b) -> compare a b) wfiles
-                                    return (sort files, sw))
-                                 (\(_, _) -> cleanup) -- replace with 'return ()' for debugging purposes
-                                 (\(f, w) -> assertBool "Directory scanning" $ all (\(a, (_,_,b)) -> a == b) (zip f w)))
+tests = [testCase "T1" (CE.bracket (do files <- createTestFiles 100 100000
+                                       wfiles <- (collectDir =<< testDir)
+                                       let sw = sortBy (\(_,_,a) (_,_,b) -> compare a b) wfiles
+                                       return (sort files, sw))
+                                   (\(_, _) -> cleanup) -- replace with 'return ()' for debugging purposes
+                                   (\(f, w) -> assertBool "Directory scanning" $ all (\(a, (_,_,b)) -> a == b) (zip f w)))
         ]
 
 createTestFiles:: Int -> Int -> IO [FilePath]
@@ -53,12 +53,13 @@ createTestFiles num size = do
     free payload
     return names
     where
-      create d p = bracket (openBinaryTempFile d "testfile_.bin")
-                           (\(_, hd) -> hClose hd)
-                           (\(f, hd) -> hPutBuf hd p size >> return f)
+      create d p = CE.bracket (openBinaryTempFile d "testfile_.bin")
+                              (\(_, hd) -> hClose hd)
+                              (\(f, hd) -> hPutBuf hd p size >> return f)
                                            
 testDir:: IO FilePath
 testDir = liftM (</> "RD_test") getTemporaryDirectory
 
 cleanup:: IO()
-cleanup = catch (removeDirectoryRecursive =<< testDir) (\_ -> return())
+cleanup = CE.catch (removeDirectoryRecursive =<< testDir) 
+                   ((\_ -> return()) :: CE.IOException -> IO())

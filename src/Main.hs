@@ -18,22 +18,26 @@
 
 module Main where
 
+import Data.Maybe
 import System.Exit
 import System.IO
 import System.Environment
 import System.Console.GetOpt
 import System.Posix.Daemonize
 import System.Posix.Syslog
+import Control.Monad
+
 import qualified Watcher as W
+import qualified Utils as U
 
 data Options = Options {optDaemonize :: Maybe String,
                         optDirectory :: Maybe FilePath,
-                        optSize      :: Int}
+                        optSize      :: String}
 
 defaultOptions:: Options
 defaultOptions = Options { optDaemonize = Nothing,
                            optDirectory = Nothing,
-                           optSize      = 100 }
+                           optSize      = "100" }
 
 options:: [OptDescr (Options -> IO Options)]
 options = [Option "h" ["help"] 
@@ -51,9 +55,10 @@ options = [Option "h" ["help"]
            "The directory to monitor and process",
            
            Option "s" ["size"]
-           (ReqArg (\arg opt -> return opt {optSize = read arg})
-            "size in MB")
-           "The maximum size of the directory in Megabytes" 
+           (ReqArg (\arg opt -> return opt {optSize = arg})
+            "size (MB, GB, TB)")
+           "The maximum size of the directory in KB,\n\
+            \the extensions 'MB', 'GB' and 'TB' are supported. " 
            ]
 
 printHelp:: IO ()
@@ -71,17 +76,21 @@ main = useSyslog "RollingDirectory" $ do
     -- Here we thread startOptions through all supplied option actions
     opts <- foldl (>>=) (return defaultOptions) actions         
 
-    let size = optSize opts  
+    let size = fromMaybe 0 (U.parseSize $ optSize opts)
+    
+    when (size==0) ( do putStrLn "Invalid size parameter" 
+                        printHelp
+                        exitWith (ExitFailure 1))
 
     case optDirectory opts of
          Just dir -> case optDaemonize opts of
                           -- start the daemon with it's own cmdline args 
                           Just dmn -> withArgs [dmn] $ serviced (daemonMain dir size) 
                           Nothing -> W.start dir size ()
-         Nothing -> printHelp >> exitWith ExitSuccess
+         Nothing -> printHelp >> exitWith (ExitFailure 1) 
 
 daemonMain:: FilePath -> Int -> CreateDaemon ()
 daemonMain p s = simpleDaemon { program = W.start p s}
 
-
+                 
 

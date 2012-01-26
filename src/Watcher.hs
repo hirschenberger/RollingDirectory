@@ -33,7 +33,7 @@ type FileSet = (Int, EpochTime, FilePath)
 
 start:: FilePath -> Int -> () -> IO ()
 start p s _ = do
-    syslog Info ("Watching directory: '" ++ p ++ "' with size limit: '" ++ show s ++ "MB'")
+    syslog Info ("Watching directory: '" ++ p ++ "' with size limit: '" ++ show s ++ "KB'")
     IN.withINotify (watch p s)
         
 watch:: FilePath -> Int -> IN.INotify -> IO()

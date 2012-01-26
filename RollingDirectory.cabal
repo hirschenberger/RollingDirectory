@@ -19,13 +19,15 @@ source-repository head
 executable RollingDirectory
   hs-source-dirs:  src
   main-is:         Main.hs
-  build-depends:   base >= 4 && < 5,
+  build-depends:   
+                   base >= 4 && < 5,
                    hinotify,
                    unix,
                    filepath,
                    directory,
                    monad-parallel,
-                   hsyslog
+                   hsyslog,
+                   regex-compat
   if impl(ghc >= 7.2)
     build-depends: hdaemonize-buildfix
   else
@@ -37,7 +39,8 @@ executable RollingDirectory
 test-suite MainTest
   main-is:         MainTest.hs
   type:            exitcode-stdio-1.0
-  build-depends:   base >= 4,
+  build-depends:   
+                   base >= 4,
                    HUnit >= 1.2 && < 2,
                    test-framework >= 0.4.1,
                    test-framework-hunit,
@@ -46,7 +49,8 @@ test-suite MainTest
                    filepath,
                    directory,
                    monad-parallel,
-                   hsyslog
+                   hsyslog,
+                   regex-compat
 
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts

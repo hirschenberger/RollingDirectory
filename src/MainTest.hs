@@ -29,19 +29,39 @@ import System.FilePath.Posix ((</>))
 import System.IO (openBinaryTempFile, hPutBuf, hClose)
 import Foreign.Marshal.Alloc (mallocBytes, free)
 
-import Watcher
+import qualified Watcher as W
+import qualified Utils as U
 
 main:: IO()
 main = TF.defaultMain tests
 
 tests:: [TF.Test]
-tests = [testCase "T1" (CE.bracket (do files <- createTestFiles 100 100000
-                                       wfiles <- (collectDir =<< testDir)
-                                       let sw = sortBy (\(_,_,a) (_,_,b) -> compare a b) wfiles
-                                       return (sort files, sw))
-                                   (\(_, _) -> cleanup) -- replace with 'return ()' for debugging purposes
-                                   (\(f, w) -> assertBool "Directory scanning" $ all (\(a, (_,_,b)) -> a == b) (zip f w)))
+tests = [testCase "Directory scanner" directoryScannerTest,
+         testCase "Size parser" sizeParserTest
         ]
+
+directoryScannerTest:: IO()
+directoryScannerTest = CE.bracket scan
+                                  (\(_, _) -> cleanup) -- replace with 'return ()' for debugging purposes
+                                  (\(f, w) -> assertBool "Directory scanning" $ check f w)
+                        where
+                            scan = do files <- createTestFiles 100 100000
+                                      wfiles <- (W.collectDir =<< testDir)
+                                      let sw = sortBy (\(_,_,a) (_,_,b) -> compare a b) wfiles
+                                      return (sort files, sw)
+                            check f w = all (\(a, (_,_,b)) -> a == b) (zip f w)
+
+sizeParserTest:: Assertion
+sizeParserTest = (U.parseSize "1" @?= Just 1) >>
+                 (U.parseSize "1MB" @?= Just 1024) >>
+                 (U.parseSize "1GB" @?= Just (1024*1024)) >>
+                 (U.parseSize "1TB" @?= Just (1024*1024*1024)) >>
+                 (U.parseSize " 1MB " @?= Just 1024) >>
+                 (U.parseSize " 1 MB " @?= Just 1024) >>
+                 (U.parseSize "0" @?= Just 0) >>
+                 (U.parseSize " 1 " @?= Just 1) >>
+                 (U.parseSize "" @?= Nothing) >>
+                 (U.parseSize "XXX" @?= Nothing)
 
 createTestFiles:: Int -> Int -> IO [FilePath]
 createTestFiles num size = do

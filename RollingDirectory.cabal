@@ -50,4 +50,5 @@ test-suite MainTest
 
   hs-source-dirs:  src
   ghc-options:     -Wall -rtsopts
+  x-uses-tf:       true
 

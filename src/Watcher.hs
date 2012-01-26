@@ -74,6 +74,6 @@ collectDir path = do
         go a f =  do let p = path </> f
                      st <- getFileStatus p 
                      can <- isDirAndAccess p st
-                     if can then collectDir p `mplus` (return a)
+                     if can then collectDir p `mplus` return a
                             else return $ (size st, accessTime st, p):a
                         

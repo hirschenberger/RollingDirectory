@@ -56,7 +56,7 @@ options = [Option "h" ["help"]
            
            Option "s" ["size"]
            (ReqArg (\arg opt -> return opt {optSize = arg})
-            "size (MB, GB, TB)")
+            "SIZE [MB|GB|TB]")
            "The maximum size of the directory in KB,\n\
             \the extensions 'MB', 'GB' and 'TB' are supported. " 
            ]

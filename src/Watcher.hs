@@ -21,29 +21,31 @@ module Watcher where
 import Data.List
 import Control.Monad
 import qualified Control.Monad.Parallel as MP
-import Control.Concurrent
 import System.Posix.Files
 import System.Posix.Types
 import System.Posix.Syslog
 import System.Directory
 import System.FilePath.Posix
-import qualified System.INotify as IN
+import qualified System.Hiernotify.Polling as HN
 
 type FileSet = (Int, EpochTime, FilePath)
 
 start:: FilePath -> Int -> () -> IO ()
 start p s _ = do
     syslog Info ("Watching directory: '" ++ p ++ "' with size limit: '" ++ show s ++ "KB'")
-    IN.withINotify (watch p s)
+    notifier <- HN.mkPollNotifier 10 (HN.Configuration p 5 (not . isPrefixOf "."))
+    watch p s notifier 
         
-watch:: FilePath -> Int -> IN.INotify -> IO()
+watch:: FilePath -> Int -> HN.Notifier -> IO()
 watch p s n = do
-    _ <- IN.addWatch n [IN.Create] p (handler p s)
-    forever $ threadDelay 10000 
+    forever $ do
+      (d, _) <- HN.difference n
+      handler p s d
+      
         
-handler:: FilePath -> Int -> IN.Event -> IO ()
-handler p s evt = do
-    syslog Debug $ "Event: " ++ show evt
+handler:: FilePath -> Int -> HN.Difference -> IO ()
+handler p s d = do
+    syslog Debug $ "Event: " ++ show d
     coll <- collectDir p
     let sf = sortBy (\(_,a,_) (_,b,_) -> compare a b) coll
     syslog Debug $ "Size: " ++ show (size sf)
@@ -53,6 +55,7 @@ handler p s evt = do
         clean l 
           | size l < (s*1024*1024) = return ()
           | otherwise  = do let (_,_,f) = head l
+                            syslog Info ("Deleting file: " ++ f)
                             removeFile f
                             clean $ tail l
 

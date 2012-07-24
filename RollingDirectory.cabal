@@ -27,7 +27,6 @@ executable RollingDirectory
                    filepath,
                    directory,
                    hsyslog,
-                   mtl,
                    regex-compat
   if impl(ghc >= 7.2)
     build-depends: hdaemonize-buildfix
@@ -52,7 +51,6 @@ test-suite MainTest
                    directory,
                    monad-parallel,
                    hsyslog,
-                   mtl,
                    regex-compat
 
   hs-source-dirs:  src

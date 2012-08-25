@@ -6,7 +6,7 @@ RollingDirectory is a daemon which monitors changes in directory contents
 limiting it's size to a given value.
 The directory with all it's subdirectories get monitored.
 
-[![Build Status](https://secure.travis-ci.org/hirschenberger/RollingDirectory.png?branch=master)](http://travis-ci.org/hirschenberger/RollingDirectory)
+[![Build Status](https://secure.travis-ci.org/hirschenberger/RollingDirectory.png?branch=master)](http://travis-ci.org/hirschenberger/RollingDirectory)]
 
 Usage
 -----

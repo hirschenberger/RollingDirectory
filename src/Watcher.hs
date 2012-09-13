@@ -33,7 +33,7 @@ type FileSet = (Int, EpochTime, FilePath)
 start:: FilePath -> Int -> () -> IO ()
 start p s _ = do
     syslog Info ("Watching directory: '" ++ p ++ "' with size limit: '" ++ show s ++ "KB'")
-    notifier <- HN.mkPollNotifier 10 (HN.Configuration p 5 (not . isPrefixOf "."))
+    notifier <- HN.mkPollNotifier 1 (HN.Configuration p 5 (not . isPrefixOf "."))
     watch p s notifier 
         
 watch:: FilePath -> Int -> HN.Notifier -> IO()
@@ -53,7 +53,7 @@ handler p s d = do
     where
         size = foldl (\acc (sz,_,_) -> sz+acc) 0
         clean l 
-          | size l < (s*1024*1024) = return ()
+          | size l < s = return ()
           | otherwise  = do let (_,_,f) = head l
                             syslog Info ("Deleting file: " ++ f)
                             removeFile f

@@ -19,14 +19,15 @@
 import qualified Test.Framework as TF
 import Test.Framework.Providers.HUnit
 
-import Test.HUnit
+import Test.HUnit (Assertion, assertBool, (@?=))
 
 import Data.List (sort, sortBy)
 import Control.Monad (liftM, replicateM)
 import qualified Control.Exception as CE
-import System.Directory (getTemporaryDirectory, createDirectory, removeDirectoryRecursive)
+import Control.Concurrent (forkIO, threadDelay, killThread)
+import System.Directory (getTemporaryDirectory, createDirectoryIfMissing, removeDirectoryRecursive)
 import System.FilePath.Posix ((</>))
-import System.IO (openBinaryTempFile, hPutBuf, hClose)
+import System.IO (openBinaryTempFile, hPutBuf, hFlush, hClose)
 import Foreign.Marshal.Alloc (mallocBytes, free)
 
 import qualified Watcher as W
@@ -37,6 +38,7 @@ main = TF.defaultMain tests
 
 tests:: [TF.Test]
 tests = [testCase "Directory scanner" directoryScannerTest,
+         testCase "Watcher" watcherTest,
          testCase "Size parser" sizeParserTest
         ]
 
@@ -50,6 +52,26 @@ directoryScannerTest = CE.bracket scan
                                       let sw = sortBy (\(_,_,a) (_,_,b) -> compare a b) wfiles
                                       return (sort files, sw)
                             check f w = all (\(a, (_,_,b)) -> a == b) (zip f w)
+
+watcherTest:: IO()
+watcherTest = CE.bracket watch
+                         (\_ -> cleanup)
+                         (\s -> assertBool "Size below limit" $ s < limit)
+                    where
+                      limit:: Int
+                      limit = 100000
+                      watch = do _ <- createTestFiles 100 1 
+                                 path <- testDir
+                                 t <- forkIO( W.start path limit () )
+                                 threadDelay 300000
+                                 _ <- createTestFiles 100 10000
+                                 threadDelay 300000
+                                 _ <- createTestFiles 100 10000
+                                 threadDelay 300000
+                                 killThread t
+                                 files <- W.collectDir path
+                                 let size = foldl (\acc (sz,_,_) -> sz+acc) 0 files
+                                 return (size)
 
 sizeParserTest:: Assertion
 sizeParserTest = (U.parseSize "1" @?= Just 1) >>
@@ -65,17 +87,16 @@ sizeParserTest = (U.parseSize "1" @?= Just 1) >>
 
 createTestFiles:: Int -> Int -> IO [FilePath]
 createTestFiles num size = do
-    cleanup
     dir <- testDir
     payload <- mallocBytes size
-    createDirectory dir
+    createDirectoryIfMissing True dir
     names <- replicateM num (create dir payload)
     free payload
     return names
     where
       create d p = CE.bracket (openBinaryTempFile d "testfile_.bin")
                               (\(_, hd) -> hClose hd)
-                              (\(f, hd) -> hPutBuf hd p size >> return f)
+                              (\(f, hd) -> hPutBuf hd p size >> hFlush hd >> return f)
                                            
 testDir:: IO FilePath
 testDir = liftM (</> "RD_test") getTemporaryDirectory

@@ -18,17 +18,17 @@
 
 module Main where
 
-import Data.Maybe
-import System.Exit
-import System.IO
-import System.Environment
-import System.Console.GetOpt
-import System.Posix.Daemonize
-import System.Posix.Syslog
-import Control.Monad
+import           Control.Monad
+import           Data.Maybe
+import           System.Console.GetOpt
+import           System.Environment
+import           System.Exit
+import           System.IO
+import           System.Posix.Daemonize
+import           System.Posix.Syslog
 
-import qualified Watcher as W
-import qualified Utils as U
+import qualified Utils                  as U
+import qualified Watcher                as W
 
 data Options = Options {optDaemonize :: Maybe String,
                         optDirectory :: Maybe FilePath,
@@ -40,25 +40,25 @@ defaultOptions = Options { optDaemonize = Nothing,
                            optSize      = "100" }
 
 options:: [OptDescr (Options -> IO Options)]
-options = [Option "h" ["help"] 
-           (NoArg (\_ ->  printHelp >> exitWith ExitSuccess)) 
+options = [Option "h" ["help"]
+           (NoArg (\_ ->  printHelp >> exitWith ExitSuccess))
            "Print this helping text",
-           
+
            Option "D" ["daemon"]
            (ReqArg (\arg opt -> return opt {optDaemonize = Just arg })
             "start|stop|restart")
-           "Start the program in daemon mode", 
-           
+           "Start the program in daemon mode",
+
            Option "d" ["dir"]
            (ReqArg (\arg opt -> return opt {optDirectory = Just arg})
             "directory")
            "The directory to monitor and process",
-           
+
            Option "s" ["size"]
            (ReqArg (\arg opt -> return opt {optSize = arg})
             "SIZE [MB|GB|TB]")
            "The maximum size of the directory in KB,\n\
-            \the extensions 'MB', 'GB' and 'TB' are supported. " 
+            \the extensions 'MB', 'GB' and 'TB' are supported. "
            ]
 
 printHelp:: IO ()
@@ -69,28 +69,28 @@ printHelp = do
 main::IO()
 main = useSyslog "RollingDirectory" $ do
     args <- getArgs
-        
+
     -- Parse options, getting a list of option actions
     let (actions, _, _) = getOpt RequireOrder options args
-    
+
     -- Here we thread startOptions through all supplied option actions
-    opts <- foldl (>>=) (return defaultOptions) actions         
+    opts <- foldl (>>=) (return defaultOptions) actions
 
     let size = fromMaybe 0 (U.parseSize $ optSize opts)
-    
-    when (size==0) ( do putStrLn "Invalid size parameter" 
+
+    when (size==0) ( do putStrLn "Invalid size parameter"
                         printHelp
                         exitWith (ExitFailure 1))
 
     case optDirectory opts of
          Just dir -> case optDaemonize opts of
-                          -- start the daemon with it's own cmdline args 
-                          Just dmn -> withArgs [dmn] $ serviced (daemonMain dir size) 
+                          -- start the daemon with it's own cmdline args
+                          Just dmn -> withArgs [dmn] $ serviced (daemonMain dir size)
                           Nothing -> W.start dir size ()
-         Nothing -> printHelp >> exitWith (ExitFailure 1) 
+         Nothing -> printHelp >> exitWith (ExitFailure 1)
 
 daemonMain:: FilePath -> Int -> CreateDaemon ()
 daemonMain p s = simpleDaemon { program = W.start p s}
 
-                 
+
 

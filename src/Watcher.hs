@@ -18,15 +18,15 @@
 
 module Watcher where
 
-import Data.List
-import Control.Monad
-import qualified Control.Monad.Parallel as MP
-import System.Posix.Files
-import System.Posix.Types
-import System.Posix.Syslog
-import System.Directory
-import System.FilePath.Posix
+import           Control.Monad
+import qualified Control.Monad.Parallel    as MP
+import           Data.List
+import           System.Directory
+import           System.FilePath.Posix
 import qualified System.Hiernotify.Polling as HN
+import           System.Posix.Files
+import           System.Posix.Syslog
+import           System.Posix.Types
 
 type FileSet = (Int, EpochTime, FilePath)
 
@@ -34,15 +34,15 @@ start:: FilePath -> Int -> () -> IO ()
 start p s _ = do
     syslog Info ("Watching directory: '" ++ p ++ "' with size limit: '" ++ show s ++ "KB'")
     notifier <- HN.mkPollNotifier 1 (HN.Configuration p 5 (not . isPrefixOf "."))
-    watch p s notifier 
-        
+    watch p s notifier
+
 watch:: FilePath -> Int -> HN.Notifier -> IO()
 watch p s n = do
     forever $ do
       (d, _) <- HN.difference n
       handler p s d
-      
-        
+
+
 handler:: FilePath -> Int -> HN.Difference -> IO ()
 handler p s d = do
     syslog Debug $ "Event: " ++ show d
@@ -52,7 +52,7 @@ handler p s d = do
     clean sf
     where
         size = foldl (\acc (sz,_,_) -> sz+acc) 0
-        clean l 
+        clean l
           | size l < s = return ()
           | otherwise  = do let (_,_,f) = head l
                             syslog Info ("Deleting file: " ++ f)
@@ -69,14 +69,14 @@ collectDir path = do
         isDirAndAccess p s = liftM2 (&&) (fileAccess p False False True)
                                          (return $ isDirectory s)
         size:: FileStatus -> Int
-        size = fromIntegral . fileSize                  
-        go:: [FileSet] -> FilePath -> IO [FileSet]                                                 
+        size = fromIntegral . fileSize
+        go:: [FileSet] -> FilePath -> IO [FileSet]
         go a []   = return a
         go a "."  = return a
-        go a ".." = return a    
+        go a ".." = return a
         go a f =  do let p = path </> f
-                     st <- getFileStatus p 
+                     st <- getFileStatus p
                      can <- isDirAndAccess p st
                      if can then collectDir p `mplus` return a
                             else return $ (size st, accessTime st, p):a
-                        
+

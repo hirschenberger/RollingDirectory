@@ -16,22 +16,28 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -}
 
-import qualified Test.Framework as TF
-import Test.Framework.Providers.HUnit
+module MainTest where
 
-import Test.HUnit (Assertion, assertBool, (@?=))
+import qualified Test.Framework                 as TF
+import           Test.Framework.Providers.HUnit
 
-import Data.List (sort, sortBy)
-import Control.Monad (liftM, replicateM)
-import qualified Control.Exception as CE
-import Control.Concurrent (forkIO, threadDelay, killThread)
-import System.Directory (getTemporaryDirectory, createDirectoryIfMissing, removeDirectoryRecursive)
-import System.FilePath.Posix ((</>))
-import System.IO (openBinaryTempFile, hPutBuf, hFlush, hClose)
-import Foreign.Marshal.Alloc (mallocBytes, free)
+import           Test.HUnit                     (Assertion, assertBool, (@?=))
 
-import qualified Watcher as W
-import qualified Utils as U
+import           Control.Concurrent             (forkIO, killThread,
+                                                 threadDelay)
+import qualified Control.Exception              as CE
+import           Control.Monad                  (liftM, replicateM)
+import           Data.List                      (sort, sortBy)
+import           Foreign.Marshal.Alloc          (free, mallocBytes)
+import           System.Directory               (createDirectoryIfMissing,
+                                                 getTemporaryDirectory,
+                                                 removeDirectoryRecursive)
+import           System.FilePath.Posix          ((</>))
+import           System.IO                      (hClose, hFlush, hPutBuf,
+                                                 openBinaryTempFile)
+
+import qualified Utils                          as U
+import qualified Watcher                        as W
 
 main:: IO()
 main = TF.defaultMain tests
@@ -60,7 +66,7 @@ watcherTest = CE.bracket watch
                     where
                       limit:: Int
                       limit = 100000
-                      watch = do _ <- createTestFiles 100 1 
+                      watch = do _ <- createTestFiles 100 1
                                  path <- testDir
                                  t <- forkIO( W.start path limit () )
                                  threadDelay 300000
@@ -97,10 +103,10 @@ createTestFiles num size = do
       create d p = CE.bracket (openBinaryTempFile d "testfile_.bin")
                               (\(_, hd) -> hClose hd)
                               (\(f, hd) -> hPutBuf hd p size >> hFlush hd >> return f)
-                                           
+
 testDir:: IO FilePath
 testDir = liftM (</> "RD_test") getTemporaryDirectory
 
 cleanup:: IO()
-cleanup = CE.catch (removeDirectoryRecursive =<< testDir) 
+cleanup = CE.catch (removeDirectoryRecursive =<< testDir)
                    ((\_ -> return()) :: CE.IOException -> IO())
